@@ -1,7 +1,13 @@
 # Contents of ~/my_app/streamlit_app.py
 import streamlit as st
-from streamlit_option_menu import option_menu
-from pages import mainmenu, videoUpload
+from pages_ import mainmenu, videoUpload, annotateSignLanguage, prediction
+
+import utils
+
+
+st.set_option('deprecation.showPyplotGlobalUse', False)
+utils.inject_custom_css()
+utils.navbar_component()
 
 reduce_header_height_style = """
     <style>
@@ -11,22 +17,29 @@ reduce_header_height_style = """
     </style>
 """
 st.markdown(reduce_header_height_style, unsafe_allow_html=True)
-# sidebar menu --> I just find this looks cool on line
-selected = option_menu(
-        menu_title = "Semi-Supervised Learning Of American Sign Language",
-        options = ["Main Menu", "Video Upload", "Annotate Sign-Language", "Prediction", "hello", "world"],
-        icons = ["house", "camera-video", "book", "pin", "bar-chart", "bag"],
-        menu_icon = "cast",
-        default_index = 0,
-        orientation = "horizontal",
-    )
 
-# st.write(selected)
+# # sidebar menu --> I just find this looks cool on line
+# selected = option_menu(
+#         menu_title = "Semi-Supervised Learning Of American Sign Language",
+#         options = ["Main Menu", "Video Upload", "Annotate Sign-Language", "Prediction", "hello", "world"],
+#         icons = ["house", "camera-video", "book", "pin", "bar-chart", "bag"],
+#         menu_icon = "cast",
+#         default_index = 0,
+#         orientation = "horizontal",
+#     )
 
-if selected == 'Main Menu':
+current_page = utils.get_current_route()
+
+# st.write(current_page)
+if current_page == 'main menu':
     mainmenu.load_view()
-elif selected == 'Video Upload':
+
+elif current_page == 'video upload':
     videoUpload.load_view()
+elif current_page == 'annotate':
+    annotateSignLanguage.load_view()
+elif current_page == 'prediction':
+    prediction.load_view()
 # elif selected ==''
 
 
