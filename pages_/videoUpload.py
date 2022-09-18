@@ -118,6 +118,7 @@ def load_view():
     st.title("Play Uploaded File")
 
     uploaded_file = st.file_uploader("Choose a video...", type=["mp4"])
+
     temporary_location = False
 
     if uploaded_file is not None:
@@ -135,11 +136,12 @@ def load_view():
     def get_cap(location):
         print("Loading in function", str(location))
         video_stream = cv2.VideoCapture(str(location))
-
+        total = int(video_stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        # st.write(total)
         # Check if camera opened successfully
         if (video_stream.isOpened() == False):
             print("Error opening video  file")
-        return video_stream
+        return video_stream, total
 
 
     scaling_factorx = 0.75
@@ -147,10 +149,12 @@ def load_view():
     image_placeholder = st.empty()
 
     idx = 0
+    my_bar = st.progress(0)
     if temporary_location:
         while True:
             # here it is a CV2 object
-            video_stream = get_cap(temporary_location)
+            video_stream, total_frames = get_cap(temporary_location)
+            # st.write(video_stream)
             # video_stream = video_stream.read()
             ret, image = video_stream.read()
             with mp_hands.Hands(
@@ -209,6 +213,8 @@ def load_view():
                   break
 
             image_placeholder.image(annotated_image, channels="BGR", use_column_width=True)
+            # update progress
+            my_bar.progress(idx/total_frames)
 
             cv2.destroyAllWindows()
         video_stream.release()
