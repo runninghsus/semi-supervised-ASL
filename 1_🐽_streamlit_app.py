@@ -4,6 +4,8 @@ from pages_ import mainmenu, videoUpload, annotateSignLanguage, prediction
 
 import utils
 
+st.set_page_config(page_title='SignLanguage', page_icon='🖐️', 
+layout="wide", initial_sidebar_state="auto", menu_items=None)
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 utils.inject_custom_css()
@@ -29,6 +31,8 @@ st.markdown(reduce_header_height_style, unsafe_allow_html=True)
 #     )
 
 current_page = utils.get_current_route()
+
+
 
 # st.write(current_page)
 if current_page == 'main menu':
