@@ -1,26 +1,33 @@
+# Contents of ~/my_app/streamlit_app.py
 import streamlit as st
-import utils as utl
-from views import home,about,analysis,options,configuration
+from pages_ import mainmenu, videoUpload, annotateSignLanguage, prediction
 
-st.set_page_config(layout="wide", page_title='Navbar sample')
+import utils
+
+st.set_page_config(page_title='SignLanguage', page_icon='🖐️',
+                   layout="wide", initial_sidebar_state="auto", menu_items=None)
+
 st.set_option('deprecation.showPyplotGlobalUse', False)
-utl.inject_custom_css()
-utl.navbar_component()
+utils.inject_custom_css()
+utils.navbar_component()
 
+reduce_header_height_style = """
+    <style>
+        div.block-container {padding-top:3rem;}
+        div.block-container {padding-left:2rem;}
+        div.block-container {padding-right:1rem;}
+    </style>
+"""
+st.markdown(reduce_header_height_style, unsafe_allow_html=True)
 
-def navigation():
-    route = utl.get_current_route()
-    if route == "home":
-        home.load_view()
-    elif route == "about":
-        about.load_view()
-    elif route == "analysis":
-        analysis.load_view()
-    elif route == "options":
-        options.load_view()
-    elif route == "configuration":
-        configuration.load_view()
-    elif route == None:
-        home.load_view()
-        
-navigation()
+current_page = utils.get_current_route()
+
+if current_page == 'main menu':
+    mainmenu.load_view()
+elif current_page == 'video upload':
+    videoUpload.load_view()
+elif current_page == 'annotate':
+    annotateSignLanguage.load_view()
+elif current_page == 'prediction':
+    prediction.load_view()
+

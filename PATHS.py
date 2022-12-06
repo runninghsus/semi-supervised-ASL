@@ -6,7 +6,6 @@ NAVBAR_PATHS = {
 }
 
 SETTINGS = {
-    'OPTIONS':'options',
-    'CONFIGURATION':'configuration',
-    'hello lucia': 'hello lulu',
+    'OPTIONS': 'options',
+    'CONFIGURATION': 'configuration',
 }

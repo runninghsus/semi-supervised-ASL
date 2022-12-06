@@ -1,5 +1,0 @@
-import streamlit as st
-
-def load_view():
-    st.markdown("# Annotate Sign Language")
-    # st.sidebar.markdown("# Annotate Sign Language")
