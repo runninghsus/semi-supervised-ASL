@@ -5,7 +5,7 @@ from pages_ import mainmenu, videoUpload, annotateSignLanguage, prediction
 import utils
 
 st.set_page_config(page_title='SignLanguage', page_icon='🖐️',
-                   layout="wide", initial_sidebar_state="auto", menu_items=None)
+                   initial_sidebar_state="auto", menu_items=None)
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 utils.inject_custom_css()
@@ -30,4 +30,3 @@ elif current_page == 'annotate':
     annotateSignLanguage.load_view()
 elif current_page == 'prediction':
     prediction.load_view()
-

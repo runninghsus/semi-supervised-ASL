@@ -75,27 +75,30 @@ def load_view():
                     annotated_image = image.copy()
                     for hand_landmarks in results.multi_hand_landmarks:
 
+                        for idx_hand, landmark in enumerate(hand_landmarks.landmark):
+                            hand_pose[idx_hand, :]=[landmark.x, landmark.y, landmark.z]
+                        # tag frame number
+                        hand_poses = np.hstack([idx, np.hstack(hand_pose)])
+                        hand_poses_list.append(hand_poses)
+
                         # st.write('hand_landmarks:', hand_landmarks)
                         # print(
                         #     f'Index finger tip coordinates: (',
                         #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, '
                         #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})'
                         # )
-                        # mp_drawing.draw_landmarks(
-                        #     annotated_image,
-                        #     hand_landmarks,
-                        #     mp_hands.HAND_CONNECTIONS,
-                        #     mp_drawing_styles.get_default_hand_landmarks_style(),
-                        #     mp_drawing_styles.get_default_hand_connections_style())
+                        mp_drawing.draw_landmarks(
+                            annotated_image,
+                            hand_landmarks,
+                            mp_hands.HAND_CONNECTIONS,
+                            mp_drawing_styles.get_default_hand_landmarks_style(),
+                            mp_drawing_styles.get_default_hand_connections_style())
 
-                        # if not hand_landmarks:
-                        #     return
+                        if not hand_landmarks:
+                            return
 
                         # plotted_landmarks = {}
-                        for idx_hand, landmark in enumerate(hand_landmarks.landmark):
-                            hand_pose[idx_hand, :]=[landmark.x, landmark.y, landmark.z]
-                        hand_poses = np.hstack(hand_pose)
-                        hand_poses_list.append(hand_poses)
+
                         # st.write(np.vstack(hand_poses_list).shape)
 
                             # print(idx_hand, landmark)
@@ -120,7 +123,7 @@ def load_view():
                     # if True break the infinite loop
                     break
 
-            # image_placeholder.image(annotated_image, channels="BGR", use_column_width=True)
+            image_placeholder.image(annotated_image, channels="BGR", use_column_width=True)
             # update progress
             my_bar.progress(idx / total_frames)
 
