@@ -1,3 +1,7 @@
+__pycache__
 ./pages_/*.pyc
+./pages_/__pycache__
 ./figures
 *.mp4
+*.csv
+.DS_Store
