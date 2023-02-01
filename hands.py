@@ -55,8 +55,8 @@ def index(application_options):
     step2_im = Image.open(step2_fname)
     step3_fname = HERE.joinpath("images/translate_logo.png")
     step3_im = Image.open(step3_fname)
-    step4_fname = HERE.joinpath("images/conv_net_example.png")
-    step4_im = Image.open(step4_fname)
+    # step4_fname = HERE.joinpath("images/conv_net_example.png")
+    # step4_im = Image.open(step4_fname)
 
     # 4 column layout
     count = 1
@@ -133,7 +133,7 @@ def main():
 
     hide_streamlit_style = """
                 <style>
-                MainMenu {visibility: hidden;}
+                #MainMenu {visibility: hidden;}
                 footer {visibility: hidden;}
 
 
