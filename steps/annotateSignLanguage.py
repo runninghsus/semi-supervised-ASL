@@ -16,6 +16,13 @@ from PIL import Image
 
 rc('animation', html='jshtml')
 
+from hands import swap_app
+
+import categories
+
+CATEGORY = categories.SIGN_ANNOTATION
+TITLE = "Sign Training"
+
 
 def animation_create(image_list):
     fig = plt.figure()
@@ -30,55 +37,59 @@ def animation_create(image_list):
     return ani
 
 
-def load_view():
-    st.subheader("# Annotate Sign Language")
+def main():
+    st.subheader("Sign Language Training")
     # st.subheader("Upload desired movie file and corresponding labels")
     colL, colR = st.columns(2)
     uploaded_pose = colL.file_uploader('Hand pose file', type=['csv'])
     uploaded_labels = colR.file_uploader('Label file', type=['csv'])
 
     mp_hands = mp.solutions.hands
-    # try:
-    data_dict = np.load('./features_labels.npy', allow_pickle=True).item()
-    low_res = []
-    for high_res in data_dict['features']:
-        gray_image = cv2.cvtColor(high_res, cv2.COLOR_BGRA2BGR)
-        low_res.append(cv2.resize(gray_image, (128, 128)))
+    try:
+        data_dict = np.load('./features_labels.npy', allow_pickle=True).item()
+        low_res = []
+        for high_res in data_dict['features']:
+            gray_image = cv2.cvtColor(high_res, cv2.COLOR_BGRA2BGR)
+            low_res.append(cv2.resize(gray_image, (128, 128)))
 
-    train_images, test_images, train_labels, test_labels = train_test_split(low_res,
-                                                                            np.array(data_dict['labels']),
-                                                                            test_size=0.2, random_state=42)
+        train_images, test_images, train_labels, test_labels = train_test_split(low_res,
+                                                                                np.array(data_dict['labels']),
+                                                                                test_size=0.2, random_state=42)
     # (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
     # st.write(train_images.shape)
     # Normalize pixel values to be between 0 and 1
-    train_images, test_images = np.array(train_images) / 255.0, np.array(test_images) / 255.0
-    class_names = ['background', 'a', 'b', 'c', 'd', 'e',
-                   'f', 'g', 'h', 'i', 'j',
-                   'k', 'l', 'm', 'n', 'o',
-                   'p', 'q', 'r', 's', 't',
-                   'u', 'v', 'w', 'x', 'y',
-                   'z'
-                   ]
+        train_images, test_images = np.array(train_images) / 255.0, np.array(test_images) / 255.0
+        class_names = ['background', 'a', 'b', 'c', 'd', 'e',
+                       'f', 'g', 'h', 'i', 'j',
+                       'k', 'l', 'm', 'n', 'o',
+                       'p', 'q', 'r', 's', 't',
+                       'u', 'v', 'w', 'x', 'y',
+                       'z'
+                       ]
     # train_images_ds = cv2.resize(train_images[0], (32, 32, 4))
     # st.write(train_images_ds.shape)
 
-    plt.figure(figsize=(10, 10))
-    for i in range(25):
-        plt.subplot(5, 5, i + 1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        plt.imshow(train_images[i])
-        # The CIFAR labels happen to be arrays,
-        # which is why you need the extra index
-        plt.title(f'Label: {class_names[train_labels[i]]}')
-    plt.show()
-    st.pyplot()
-    num_training_epoch = st.slider('Number of epochs?', 0, 100, 20)
-    image = Image.open('./assets/images/conv_net_example.png')
-    st.image(image)
-    if st.button('start training a neural net'):
+        plt.figure(figsize=(10, 10))
+        for i in range(25):
+            plt.subplot(5, 5, i + 1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.grid(False)
+            plt.imshow(train_images[i])
+            # The CIFAR labels happen to be arrays,
+            # which is why you need the extra index
+            plt.title(f'Label: {class_names[train_labels[i]]}')
+        plt.show()
+        st.pyplot()
+    except:
+        pass
 
+    num_training_epoch = st.slider('Number of epochs?', 0, 100, 20)
+    # image = Image.open('./images/conv_net_ani.gif')
+    _, mid_col, _ = st.columns([0.4, 1, 0.4])
+    mid_col.image('./images/conv_net_ani.gif')
+    # st.image(image)
+    if mid_col.button('start training a neural net'):
         model = models.Sequential()
         model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)))
         model.add(layers.MaxPooling2D((2, 2)))

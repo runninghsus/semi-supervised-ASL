@@ -5,16 +5,24 @@ import io
 import pandas as pd
 import numpy as np
 
+from hands import swap_app
 
-def load_view():
+import categories
+
+CATEGORY = categories.VIDEO_UPLOAD
+TITLE = "Video Upload"
+
+
+def main():
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_hands = mp.solutions.hands
-    st.subheader("Upload desired movie file and corresponding labels")
-    colL, colR = st.columns(2)
-    uploaded_movie = colL.file_uploader('Video file', type=['mp4'])
+    # colL, colM, colR = st.columns([0.1, 1, 0.1])
+    st.subheader("Hand Tracking")
+
+    uploaded_movie = st.file_uploader('Video file', type=['mp4'])
     temporary_location = False
-    uploaded_labels = colR.file_uploader('Label file', type=['csv'])
+    # uploaded_labels = colR.file_uploader('Label file', type=['csv'])
 
     if uploaded_movie is not None:
         g = io.BytesIO(uploaded_movie.read())  # BytesIO Object
@@ -33,7 +41,7 @@ def load_view():
             print("Error opening video  file")
         return video_stream, total
 
-    scale_ = colL.slider('resolution scale', min_value=0.0, max_value=1.0, value=0.5)
+    scale_ = st.slider('resolution scale', min_value=0.0, max_value=1.0, value=0.5)
     scaling_factorx = scale_
     scaling_factory = scale_
     image_placeholder = st.empty()
@@ -65,7 +73,7 @@ def load_view():
                     # image = cv2.flip(cv2.imread(file), 1)
                     # Convert the BGR image to RGB before processing.
                     results = hands.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-                    # results = hands.process(image)
+                    # results = steps.process(image)
 
                     # Print handedness and draw hand landmarks on the image.
                     # print('Handedness:', results.multi_handedness)
@@ -76,7 +84,7 @@ def load_view():
                     for hand_landmarks in results.multi_hand_landmarks:
 
                         for idx_hand, landmark in enumerate(hand_landmarks.landmark):
-                            hand_pose[idx_hand, :]=[landmark.x, landmark.y, landmark.z]
+                            hand_pose[idx_hand, :] = [landmark.x, landmark.y, landmark.z]
                         # tag frame number
                         hand_poses = np.hstack([idx, np.hstack(hand_pose)])
                         hand_poses_list.append(hand_poses)
@@ -101,8 +109,8 @@ def load_view():
 
                         # st.write(np.vstack(hand_poses_list).shape)
 
-                            # print(idx_hand, landmark)
-                            # print(landmark.x, landmark.y, landmark.z)
+                        # print(idx_hand, landmark)
+                        # print(landmark.x, landmark.y, landmark.z)
                     # cv2.imwrite(
                     #     '/tmp/annotated_image' + str(idx) + '.png', cv2.flip(annotated_image, 1)) #change this, and update str(idx)
                     # Draw hand world landmarks.

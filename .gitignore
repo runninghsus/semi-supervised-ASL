@@ -5,5 +5,5 @@ __pycache__
 *.mp4
 *.csv
 .DS_Store
-./.idea
+.idea
 ./analyses/.ipynb_checkpoints
