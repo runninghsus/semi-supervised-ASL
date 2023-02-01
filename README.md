@@ -2,7 +2,9 @@
 [![GitHub stars](https://img.shields.io/github/stars/runninghsus/semi-supervised-ASL.svg?style=social&label=Star)](https://github.com/YttriLab/A-SOID)
 [![GitHub forks](https://img.shields.io/github/forks/runninghsus/semi-supervised-ASL.svg?style=social&label=Fork)](https://github.com/YttriLab/A-SOID)
 
-![Hands_logo](images/hands_logo.jpeg)
+<p align="center">
+  <img src="images/hands_logo.jpeg" />
+</p>
 
 ## Introduction
 This no code interface will serve to be a
@@ -20,7 +22,17 @@ conda activate hands
 cd semi-supervised-ASL
 streamlit run hands.py
 ```
-![app_layout](images/app.png)
+The streamlit app composes of 3 main modules.
+
+
+<p align="center">
+  <img src="images/app.png" />
+</p>
+
+* Upload video to obtain pose.
+* Train a neural network that recognizes sign langugage.
+* Translate into other languages.
+
 
 ## References
 
