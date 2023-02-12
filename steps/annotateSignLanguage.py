@@ -1,22 +1,12 @@
+import cv2
+import matplotlib.pyplot as plt
 import mediapipe as mp
 import numpy as np
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
-from matplotlib import animation
-import streamlit.components.v1 as components
-from matplotlib import rc
-# plt.rcParams['animation.ffmpeg_path'] = r'C:\Users\alexa\Anaconda3\pkgs\ffmpeg-4.3.1-ha925a31_0\Library\bin\ffmpeg.exe'
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-import cv2
-from PIL import Image
-
-rc('animation', html='jshtml')
-
-from hands import swap_app
+from tensorflow.keras import layers, models
 
 import categories
 
@@ -24,51 +14,45 @@ CATEGORY = categories.SIGN_ANNOTATION
 TITLE = "Sign Training"
 
 
-def animation_create(image_list):
-    fig = plt.figure()
-    #     plt.axis('off')
-    im = plt.imshow(image_list[0])
-
-    def animate(k):
-        im.set_array(image_list[k])
-        return im
-
-    ani = animation.FuncAnimation(fig, animate, frames=len(image_list), blit=False)
-    return ani
-
-
 def main():
     st.subheader("Sign Language Training")
-    # st.subheader("Upload desired movie file and corresponding labels")
     colL, colR = st.columns(2)
-    uploaded_pose = colL.file_uploader('Hand pose file', type=['csv'])
-    uploaded_labels = colR.file_uploader('Label file', type=['csv'])
-
+    # upload files
+    uploaded_poses = colL.file_uploader('Hand pose files',
+                                        accept_multiple_files=True,
+                                        type=['csv'])
+    uploaded_labels = colR.file_uploader('Label files',
+                                         accept_multiple_files=True,
+                                         type=['csv'])
     mp_hands = mp.solutions.hands
     try:
-        data_dict = np.load('./features_labels.npy', allow_pickle=True).item()
+        data_dict = np.load(f'./features_labels.npy',
+                            allow_pickle=True).item()
+        # define the smaller between the two
+        # min_ = np.min((np.array(data_dict['labels']).shape[0], len(np.array(data_dict['features']))))
         low_res = []
+        # downsample to 128x128 for Conv Net
         for high_res in data_dict['features']:
             gray_image = cv2.cvtColor(high_res, cv2.COLOR_BGRA2BGR)
             low_res.append(cv2.resize(gray_image, (128, 128)))
-
-        train_images, test_images, train_labels, test_labels = train_test_split(low_res,
-                                                                                np.array(data_dict['labels']),
-                                                                                test_size=0.2, random_state=42)
-    # (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
-    # st.write(train_images.shape)
-    # Normalize pixel values to be between 0 and 1
+        # 80/20 split for training and test set
+        train_images, test_images, train_labels, test_labels = \
+            train_test_split(low_res,
+                             np.array(data_dict['labels']),
+                             test_size=0.2,
+                             random_state=2023)
+        # Normalize pixel values to be between 0 and 1
         train_images, test_images = np.array(train_images) / 255.0, np.array(test_images) / 255.0
-        class_names = ['background', 'a', 'b', 'c', 'd', 'e',
-                       'f', 'g', 'h', 'i', 'j',
-                       'k', 'l', 'm', 'n', 'o',
-                       'p', 'q', 'r', 's', 't',
-                       'u', 'v', 'w', 'x', 'y',
-                       'z'
-                       ]
-    # train_images_ds = cv2.resize(train_images[0], (32, 32, 4))
-    # st.write(train_images_ds.shape)
-
+        # label names
+        class_names = [
+            'background',
+            'a', 'b', 'c', 'd', 'e',
+            'f', 'g', 'h', 'i', 'j',
+            'k', 'l', 'm', 'n', 'o',
+            'p', 'q', 'r', 's', 't',
+            'u', 'v', 'w', 'x', 'y',
+            'z'
+        ]
         plt.figure(figsize=(10, 10))
         for i in range(25):
             plt.subplot(5, 5, i + 1)
@@ -82,7 +66,92 @@ def main():
         plt.show()
         st.pyplot()
     except:
-        pass
+
+        labels_list = []
+        features_list = []
+        start_button = st.button('start extracting')
+        if start_button:
+            for i in range(len(uploaded_poses)):
+                df_pose = pd.read_csv(uploaded_poses[i],
+                                      low_memory=False)
+                df_label = pd.read_csv(uploaded_labels[i],
+                                       low_memory=False)
+                print(uploaded_poses[i].name, uploaded_labels[i].name)
+                label_framerate = 1 / (df_label.iloc[1, 0] - df_label.iloc[0, 0])
+                # identify the poses frames
+                frames_of_interest = df_pose.iloc[:, 1]
+                labels = []
+                features = []
+                my_bar = st.progress(0)
+                with st.spinner('extracting labels...'):
+                    # extract labels from binary table
+                    for i in frames_of_interest / (label_framerate * 3):
+                        # add 1 to differentiate from unlabeled
+                        try:
+                            labels.append(
+                                np.argmax(
+                                    np.array(df_label.loc[df_label['time'] == i])[0][1:], axis=0
+                                ) + 1
+                            )
+                        except:
+                            pass
+                with st.spinner('extracting features...'):
+                    # extract images
+                    for row in np.arange(0, len(df_pose), 1):
+                        if df_pose.iloc[row, 1] % 3 == 0:
+                            fig = plt.figure(figsize=(4, 4))
+                            ax = fig.add_subplot(projection='3d')
+                            ax.view_init(elev=10, azim=10)
+                            plotted_landmarks = {}
+                            for i in range(21):
+                                pose_digit = np.array(df_pose.iloc[row, (3 * i + 2):(3 * i + 2) + 3])
+                                ax.scatter3D(
+                                    xs=[-pose_digit[2]],
+                                    ys=[pose_digit[0]],
+                                    zs=[-pose_digit[1]],
+                                    color='r',
+                                    s=5,
+                                    linewidth=1)
+                                plotted_landmarks[i] = (-pose_digit[2],
+                                                        pose_digit[0],
+                                                        -pose_digit[1])
+
+                            # Draws the connections if the start and end landmarks are both visible.
+                            for connection in mp_hands.HAND_CONNECTIONS:
+                                start_idx = connection[0]
+                                end_idx = connection[1]
+                                if start_idx in plotted_landmarks and end_idx in plotted_landmarks:
+                                    landmark_pair = [
+                                        plotted_landmarks[start_idx],
+                                        plotted_landmarks[end_idx]
+                                    ]
+                                ax.plot3D(
+                                    xs=[landmark_pair[0][0],
+                                        landmark_pair[1][0]],
+                                    ys=[landmark_pair[0][1],
+                                        landmark_pair[1][1]],
+                                    zs=[landmark_pair[0][2],
+                                        landmark_pair[1][2]],
+                                    color='k',
+                                    linewidth=0.8)
+                            ax.set_xticklabels('')
+                            ax.set_yticklabels('')
+                            ax.set_zticklabels('')
+                            ax.axis('off')
+                            fig.canvas.draw()
+                            X = np.array(fig.canvas.renderer.buffer_rgba())
+                            features.append(X)
+                        my_bar.progress((row + 1) / len(df_pose))
+
+                features_list.append(features)
+                labels_list.append(labels)
+            all_features = np.vstack(features_list)
+            all_labels = np.hstack(labels_list)
+            st.write(len(all_features), all_labels.shape)
+            data_dict = {'features': all_features, 'labels': all_labels}
+            filename = fr'./features_labels'
+            # save both npy and mat
+            np.save(str.join('', (filename, '.npy')), data_dict)
 
     num_training_epoch = st.slider('Number of epochs?', 0, 100, 20)
     # image = Image.open('./images/conv_net_ani.gif')
@@ -90,6 +159,7 @@ def main():
     mid_col.image('./images/conv_net_ani.gif')
     # st.image(image)
     if mid_col.button('start training a neural net'):
+        # model architecture
         model = models.Sequential()
         model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)))
         model.add(layers.MaxPooling2D((2, 2)))
@@ -97,19 +167,17 @@ def main():
         model.add(layers.MaxPooling2D((2, 2)))
         model.add(layers.Conv2D(64, (3, 3), activation='relu'))
         model.summary()
-
         model.add(layers.Flatten())
         model.add(layers.Dense(64, activation='relu'))
         model.add(layers.Dense(27))
         model.summary()
-
+        # start training
         model.compile(optimizer='adam',
                       loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=['accuracy'])
-
         history = model.fit(train_images, train_labels, epochs=num_training_epoch,
                             validation_data=(test_images, test_labels))
-
+        # plot results
         fig, ax = plt.subplots(1, 1, figsize=(11, 8))
         ax.plot(history.history['accuracy'], label='accuracy', color='indianred')
         ax.plot(history.history['val_accuracy'], label='val_accuracy', color='dodgerblue')
@@ -117,153 +185,6 @@ def main():
         ax.set_ylabel('Accuracy')
         ax.set_ylim([0.5, 1])
         ax.legend(loc='lower right')
-
         test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=2)
         st.success(f'Accuracy of {test_acc}!')
         st.pyplot(fig)
-
-# st.write(data_dict['labels'], data_dict['features'][0])
-#     fig, ax = plt.subplots(1, 1)
-#     ax.imshow(data_dict['features'][19])
-#     ax.set_title(data_dict['labels'][19])
-#     st.pyplot(fig)
-
-# ani = animation_create(data_dict['features'])
-
-# components.html(ani.to_jshtml(), height=800)
-# return ani
-
-# except:
-#     df = pd.read_csv(uploaded_pose, low_memory=False)
-#     df_labels = pd.read_csv(uploaded_labels, low_memory=False)
-#
-#     framerate=1/(df_labels.iloc[1, 0] - df_labels.iloc[0, 0])
-#     frames_of_interest = df.iloc[:, 1]
-#     labels = []
-#     with st.spinner('extracting labels...'):
-#         for i in frames_of_interest/framerate:
-#             # add 1 to differentiate from unlabeled
-#             labels.append(np.argmax(np.array(df_labels.loc[df_labels['time']==i])[0][1:], axis=0)+1)
-#
-#
-#     # pose_digit = []
-#     # for i in range(21):
-#     #     pose_digit.append(df.iloc[:, (3 * i + 2):(3 * i + 2) + 2])
-#
-#     features = []
-#     my_bar = st.progress(0)
-#     with st.spinner('extracting features...'):
-#         for row in range(len(df)):
-#
-#             fig = plt.figure(figsize=(4, 4))
-#             ax = fig.add_subplot(projection='3d')
-#
-#             # # ax = fig.add_subplot(rows, cols, m + 1, projection='3d')
-#             ax.view_init(elev=10, azim=10)
-#             plotted_landmarks = {}
-#             for i in range(21):
-#                 pose_digit = np.array(df.iloc[row, (3 * i + 2):(3 * i + 2) + 3])
-#                 ax.scatter3D(
-#                     xs=[-pose_digit[2]],
-#                     ys=[pose_digit[0]],
-#                     zs=[-pose_digit[1]],
-#                     color='r',
-#                     s=5,
-#                     linewidth=1)
-#                 plotted_landmarks[i] = (-pose_digit[2],
-#                                         pose_digit[0],
-#                                         -pose_digit[1])
-#
-#             # Draws the connections if the start and end landmarks are both visible.
-#             for connection in mp_hands.HAND_CONNECTIONS:
-#                 start_idx = connection[0]
-#                 end_idx = connection[1]
-#
-#                 if start_idx in plotted_landmarks and end_idx in plotted_landmarks:
-#                     landmark_pair = [
-#                         plotted_landmarks[start_idx], plotted_landmarks[end_idx]
-#                     ]
-#                 ax.plot3D(
-#                     xs=[landmark_pair[0][0], landmark_pair[1][0]],
-#                     ys=[landmark_pair[0][1], landmark_pair[1][1]],
-#                     zs=[landmark_pair[0][2], landmark_pair[1][2]],
-#                     color='k',
-#                     linewidth=0.8)
-#             ax.set_xticklabels('')
-#             ax.set_yticklabels('')
-#             ax.set_zticklabels('')
-#             ax.axis('off')
-#
-#             fig.canvas.draw()
-#
-#             X = np.array(fig.canvas.renderer.buffer_rgba())
-#             features.append(X)
-#
-#             my_bar.progress((row+1) / len(df))
-#
-#         data_dict = {'features': features, 'labels': labels}
-#
-#         filename = r'./features_labels'
-#         # save both npy and mat
-#         np.save(str.join('', (filename, '.npy')), data_dict)
-
-
-# data_train = [hand_pose_stacked]
-
-
-# # subplot with various fingerspelling skeleton
-# fig = plt.figure(figsize=(16, 16))
-# num_landmarks = 21
-# rows = 6
-# cols = 4
-#
-# nskip = 50
-# offset = 0
-#
-# for m in range(int(rows * cols)):
-#     try:
-#         ax = fig.add_subplot(rows, cols, m + 1, projection='3d')
-#         ax.view_init(elev=10, azim=10)
-#         plotted_landmarks = {}
-#         for i in range(21):
-#             pose_digit = np.array(df.iloc[:, (3 * i + 2):(3 * i + 2) + 3])
-#             ax.scatter3D(
-#                 xs=[-pose_digit[m * nskip + offset, 2]],
-#                 ys=[pose_digit[m * nskip + offset, 0]],
-#                 zs=[-pose_digit[m * nskip + offset, 1]],
-#                 color='r',
-#                 s=5,
-#                 linewidth=1)
-#             plotted_landmarks[i] = (-pose_digit[m * nskip + offset, 2],
-#                                     pose_digit[m * nskip + offset, 0],
-#                                     -pose_digit[m * nskip + offset, 1])
-#
-#         # Draws the connections if the start and end landmarks are both visible.
-#         for connection in mp_hands.HAND_CONNECTIONS:
-#             start_idx = connection[0]
-#             end_idx = connection[1]
-#
-#             if start_idx in plotted_landmarks and end_idx in plotted_landmarks:
-#                 landmark_pair = [
-#                     plotted_landmarks[start_idx], plotted_landmarks[end_idx]
-#                 ]
-#             ax.plot3D(
-#                 xs=[landmark_pair[0][0], landmark_pair[1][0]],
-#                 ys=[landmark_pair[0][1], landmark_pair[1][1]],
-#                 zs=[landmark_pair[0][2], landmark_pair[1][2]],
-#                 color='k',
-#                 linewidth=0.8)
-#         ax.set_xticklabels('')
-#         ax.set_yticklabels('')
-#         ax.set_zticklabels('')
-#         ax.axis('off')
-#     except:
-#         pass
-# plt.show()
-# plt.axis('off')
-# st.pyplot(fig)
-# except:
-#     st.warning('please upload both files')
-
-# st.write(uploaded_pose)
-# st.sidebar.markdown("# Annotate Sign Language")
