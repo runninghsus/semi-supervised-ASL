@@ -28,6 +28,7 @@ def main():
     try:
         data_dict = np.load(f'./features_labels.npy',
                             allow_pickle=True).item()
+        st.write(np.unique(data_dict['labels']))
         # define the smaller between the two
         # min_ = np.min((np.array(data_dict['labels']).shape[0], len(np.array(data_dict['features']))))
         low_res = []
@@ -88,11 +89,20 @@ def main():
                     for i in frames_of_interest / (label_framerate * 3):
                         # add 1 to differentiate from unlabeled
                         try:
-                            labels.append(
-                                np.argmax(
-                                    np.array(df_label.loc[df_label['time'] == i])[0][1:], axis=0
-                                ) + 1
-                            )
+                            if np.max(np.array(df_label.loc[df_label['time'] == i])[0][1:]) > 0:
+                                labels.append(
+                                    np.argmax(
+                                        np.array(df_label.loc[df_label['time'] == i])[0][1:], axis=0
+                                    ) + 1
+                                )
+
+                            else:
+                                labels.append(
+                                    np.argmax(
+                                        np.array(df_label.loc[df_label['time'] == i])[0][1:], axis=0
+                                    )
+                                )
+
                         except:
                             pass
                 with st.spinner('extracting features...'):
@@ -142,12 +152,12 @@ def main():
                             X = np.array(fig.canvas.renderer.buffer_rgba())
                             features.append(X)
                         my_bar.progress((row + 1) / len(df_pose))
-
+                st.write(len(features), len(labels))
                 features_list.append(features)
                 labels_list.append(labels)
             all_features = np.vstack(features_list)
             all_labels = np.hstack(labels_list)
-            st.write(len(all_features), all_labels.shape)
+            print(len(all_features), all_labels.shape)
             data_dict = {'features': all_features, 'labels': all_labels}
             filename = fr'./features_labels'
             # save both npy and mat

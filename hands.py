@@ -39,6 +39,7 @@ def swap_app(app):
         st.experimental_rerun()
 
 
+# main menu page code
 def index(application_options):
     """
     :param application_options: dictionary (app_key: apps)
@@ -67,11 +68,13 @@ def index(application_options):
         column = columns[column_index]
         # for each category
         for category in categories:
+
             applications_in_this_category = [
                 item
                 for item in application_options.items()
                 if item[1].CATEGORY == category
             ]
+
             # create a container expander that puts an image/gif/video and a button to navigate
 
             for app_key, application in applications_in_this_category:
