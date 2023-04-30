@@ -5,16 +5,9 @@ import mediapipe as mp
 import io
 import pandas as pd
 import numpy as np
-# creating multipage app
-from hands import swap_app
-
-import categories
-
-CATEGORY = categories.VIDEO_UPLOAD
-TITLE = "Video Upload"
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def get_cap(location):
     print("Loading in function", str(location))
     video_stream = cv2.VideoCapture(str(location))
@@ -32,28 +25,36 @@ def main():
     mp_drawing_styles = mp.solutions.drawing_styles
     # main prediction classifier, where in image is the hand
     mp_hands = mp.solutions.hands
-
     # page title
-    st.subheader("Hand Tracking")
+    st.markdown(f" <h1 style='text-align: left; color: #67286D; font-size:30px; "
+                f"font-family:Avenir; font-weight:normal'>"
+                f"Upload videos, 3D hand pose will be extracted."
+                f""
+                f"</h1> "
+                , unsafe_allow_html=True)
+    st.divider()
+    colL, colR = st.columns(2)
+    colL_exp = colL.expander('Upload sign language videos', expanded=True)
     # your collection of uploaded movies
-    uploaded_movies = st.file_uploader('Video file',
-                                       accept_multiple_files=True,
-                                       type=['mp4', 'avi'])
+    uploaded_movies = colL_exp.file_uploader('Video file',
+                                             accept_multiple_files=True,
+                                             type=['mp4', 'avi'])
     # video scale, if 1, the resolution doesn't change,
     # if 0.5, resolution gets 1/2
-    scale_ = st.slider('resolution scale',
-                       min_value=0.0,
-                       max_value=1.0,
-                       value=0.5)
+    scale_ = colL_exp.slider('resolution scale',
+                             min_value=0.0,
+                             max_value=1.0,
+                             value=0.5)
     # a button
-    start_button = st.button('Start extracting hand pose')
+    start_button = colL_exp.button('Start extracting hand pose')
     if start_button:
         # loops through your movie list
         for f, uploaded_movie in enumerate(uploaded_movies):
             # creates a spinner, spins until iteration is done
             with st.spinner(f'extracting video #{f}'):
                 # image placeholder
-                image_placeholder = st.empty()
+                colR_exp = colR.expander('', expanded=True)
+                image_placeholder = colR_exp.empty()
                 temporary_location = False
                 if uploaded_movie is not None:
                     g = io.BytesIO(uploaded_movie.read())  # BytesIO Object
@@ -64,7 +65,7 @@ def main():
                 # frame counter
                 idx = 0
                 # progress bar, 0 to 1
-                my_bar = st.progress(0)
+                my_bar = colR_exp.progress(0)
                 # initialization of an array, number of dots on hand x 3 (x, y, z)
                 # mediapipe default output is 21x3
                 hand_pose = np.zeros((21, 3))
@@ -85,7 +86,6 @@ def main():
                             if ret:
                                 # adding one to image/frame counter
                                 idx += 1
-                                #
                                 image = cv2.resize(image, None, fx=scale_, fy=scale_,
                                                    interpolation=cv2.INTER_AREA)
 
@@ -113,38 +113,14 @@ def main():
                                     hand_poses = np.hstack([idx, np.hstack(hand_pose)])
                                     # store into a list of all time points/frames, if single hand
                                     hand_poses_list.append(hand_poses)
-
-                                    # st.write('hand_landmarks:', hand_landmarks)
-                                    # print(
-                                    #     f'Index finger tip coordinates: (',
-                                    #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, '
-                                    #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})'
-                                    # )
                                     mp_drawing.draw_landmarks(
                                         annotated_image,
                                         hand_landmarks,
                                         mp_hands.HAND_CONNECTIONS,
                                         mp_drawing_styles.get_default_hand_landmarks_style(),
                                         mp_drawing_styles.get_default_hand_connections_style())
-
                                     if not hand_landmarks:
                                         return
-
-                                    # plotted_landmarks = {}
-
-                                    # st.write(np.vstack(hand_poses_list).shape)
-
-                                    # print(idx_hand, landmark)
-                                    # print(landmark.x, landmark.y, landmark.z)
-                                # cv2.imwrite(
-                                #     '/tmp/annotated_image' + str(idx) + '.png', cv2.flip(annotated_image, 1)) #change this, and update str(idx)
-                                # Draw hand world landmarks.
-                                # if not results.multi_hand_world_landmarks:
-                                #     continue
-                                # for hand_world_landmarks in results.multi_hand_world_landmarks:
-                                #     mp_drawing.plot_landmarks(
-                                #         hand_world_landmarks, mp_hands.HAND_CONNECTIONS, azimuth=5)
-
                             else:
                                 print("there was a problem or video was finished")
                                 cv2.destroyAllWindows()
@@ -152,16 +128,22 @@ def main():
                                 break
                             # check if frame is None
                             if image is None:
-                                print("there was a problem None")
+                                print("there was a problem")
                                 # if True break the infinite loop
                                 break
-
                         image_placeholder.image(annotated_image, channels="BGR", use_column_width=True)
                         # update progress
                         my_bar.progress(idx / total_frames)
-
                         cv2.destroyAllWindows()
                     hand_df = pd.DataFrame(data=np.vstack(hand_poses_list))
                     hand_df.to_csv(f'./temp_video_{f}_pose.csv')
                     video_stream.release()
                     cv2.destroyAllWindows()
+
+    bottom_cont = st.container()
+    with bottom_cont:
+        st.divider()
+        st.markdown(f" <h1 style='text-align: left; color: gray; font-size:16px; "
+                    f"font-family:Avenir; font-weight:normal'>"
+                    f"SignWave is developed by Alexander Hsu and Lucia Fang</h1> "
+                    , unsafe_allow_html=True)

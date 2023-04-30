@@ -8,29 +8,31 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, models
 
-import categories
-
-CATEGORY = categories.SIGN_ANNOTATION
-TITLE = "Sign Training"
-
 
 def main():
-    st.subheader("Sign Language Training")
+    # page title
+    st.markdown(f" <h1 style='text-align: left; color: #67286D; font-size:30px; "
+                f"font-family:Avenir; font-weight:normal'>"
+                f"Upload extracted pose along with annotation files."
+                f""
+                f"</h1> "
+                , unsafe_allow_html=True)
+    st.divider()
     colL, colR = st.columns(2)
+    colL_exp = colL.expander('Upload extracted 3D hand pose csv file', expanded=True)
     # upload files
-    uploaded_poses = colL.file_uploader('Hand pose files',
+    uploaded_poses = colL_exp.file_uploader('Hand pose files',
                                         accept_multiple_files=True,
                                         type=['csv'])
-    uploaded_labels = colR.file_uploader('Label files',
+    colR_exp = colR.expander('Upload annotation binary table csv file', expanded=True)
+    uploaded_labels = colR_exp.file_uploader('Label files',
                                          accept_multiple_files=True,
                                          type=['csv'])
     mp_hands = mp.solutions.hands
     try:
         data_dict = np.load(f'./features_labels.npy',
                             allow_pickle=True).item()
-        st.write(np.unique(data_dict['labels']))
         # define the smaller between the two
-        # min_ = np.min((np.array(data_dict['labels']).shape[0], len(np.array(data_dict['features']))))
         low_res = []
         # downsample to 128x128 for Conv Net
         for high_res in data_dict['features']:
@@ -67,7 +69,6 @@ def main():
         plt.show()
         st.pyplot()
     except:
-
         labels_list = []
         features_list = []
         start_button = st.button('start extracting')
@@ -164,11 +165,8 @@ def main():
             np.save(str.join('', (filename, '.npy')), data_dict)
 
     num_training_epoch = st.slider('Number of epochs?', 0, 100, 20)
-    # image = Image.open('./images/conv_net_ani.gif')
-    _, mid_col, _ = st.columns([0.4, 1, 0.4])
-    mid_col.image('./images/conv_net_ani.gif')
-    # st.image(image)
-    if mid_col.button('start training a neural net'):
+    # _, mid_col, _ = st.columns([0.4, 1, 0.4])
+    if st.button('start training a neural net'):
         # model architecture
         model = models.Sequential()
         model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)))
@@ -198,3 +196,12 @@ def main():
         test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=2)
         st.success(f'Accuracy of {test_acc}!')
         st.pyplot(fig)
+
+
+    bottom_cont = st.container()
+    with bottom_cont:
+        st.divider()
+        st.markdown(f" <h1 style='text-align: left; color: gray; font-size:16px; "
+                    f"font-family:Avenir; font-weight:normal'>"
+                    f"SignWave is developed by Alexander Hsu and Lucia Fang</h1> "
+                    , unsafe_allow_html=True)
